@@ -2,7 +2,8 @@
   (:require [hiccup.page :refer [html5]]
             [clj-http.client :as client]
             [clojure.edn :as edn]
-            [clojure.string :as s]))
+            [clojure.string :as s])
+            (:import [java.text SimpleDateFormat]))
 
 (defn format-place
   "Formats place name string to OCD ID style."
@@ -13,6 +14,11 @@
   "Formats state abbreviation to OCD ID style."
   [state]
   (s/lower-case state))
+
+(defn format-date
+  "Format election date displayed on page."
+  [date]
+  (.format (SimpleDateFormat. "MM/dd/yyyy") date))
 
 (defn generate-ocd-ids
   "Generates a vector of OCD IDs for given address inputs."
@@ -46,9 +52,13 @@
 (defn results
   "HTML body of the search results page."
   [request]
-  [:div {:class "results"}
-   [:h1 "Upcoming Elections"]
-   [:p (str (upcoming-elections (get-in request [:params :city]) (get-in request [:params :state])))]])
+  (let [elections (upcoming-elections (get-in request [:params :city]) (get-in request [:params :state]))]
+    [:div {:class "results"}
+     [:h1 "Upcoming Elections"]
+     (if (empty? elections)
+       [:p "No Results"]
+       [:ul (for [election elections]
+              [:li (format-date (:date election)) " - " [:a {:href (:website election)} (:description election)]])])]))
 
 (defn page [request]
   (html5
