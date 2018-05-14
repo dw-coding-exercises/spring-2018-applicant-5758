@@ -1,5 +1,7 @@
 (ns my-exercise.search
   (:require [hiccup.page :refer [html5]]
+            [clj-http.client :as client]
+            [clojure.edn :as edn]
             [clojure.string :as s]))
 
 (defn format-place
@@ -26,6 +28,13 @@
       (not (s/blank? city))
       (conj place-division))))
 
+(defn upcoming-elections
+  "Get upcoming elections from Turbovote API for given address inputs."
+  [city state]
+  (let [ocd-ids (s/join "," (generate-ocd-ids city state))]
+    (edn/read-string (:body (client/get "https://api.turbovote.org/elections/upcoming"
+                                        {:query-params {"district-divisions" ocd-ids}})))))
+
 (defn header [_]
   [:head
    [:meta {:charset "UTF-8"}]
@@ -39,7 +48,7 @@
   [request]
   [:div {:class "results"}
    [:h1 "Upcoming Elections"]
-   [:p (str (generate-ocd-ids (get-in request [:params :city]) (get-in request [:params :state])))]])
+   [:p (str (upcoming-elections (get-in request [:params :city]) (get-in request [:params :state])))]])
 
 (defn page [request]
   (html5
