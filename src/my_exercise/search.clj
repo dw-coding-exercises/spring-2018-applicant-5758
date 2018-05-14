@@ -17,5 +17,5 @@
 
 (defn page [request]
   (html5
-   (header)
+   (header request)
    (results request)))
